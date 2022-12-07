@@ -13,6 +13,7 @@ api = Api(app)
 @app.route('/upload/csv', methods=['POST'])
 def upload_csv():
     if request.method == 'POST':
+        #get file from request
         f = request.files['file']
         save_path = os.path.join(os.getcwd(), 'data')
         if not os.path.exists(save_path):

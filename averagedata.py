@@ -55,7 +55,7 @@ class FilterData:
         #convert date to dd/mm/yyyy without time
         df['transaction_date'] = df['transaction_date'].dt.strftime('%d/%m/%Y')
         #replcae _ with space for transaction_description
-        df['transaction_description'] = df['transaction_description'].str.replace('_', ' ')
+        #df['transaction_description'] = df['transaction_description'].str.replace('_', ' ')
         df = df.to_json(orient='records')
         return df
     #function to send max average balance, min average balance, average balance , average credit, average debit
