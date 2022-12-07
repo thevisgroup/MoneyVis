@@ -1,4 +1,3 @@
-import colorsys
 import pandas as pd;
 import uuid;
 import squarify;

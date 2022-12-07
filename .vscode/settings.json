@@ -1,0 +1,4 @@
+{
+    "appService.defaultWebAppToDeploy": "/subscriptions/ef948929-b54b-480a-a420-90e457d847e4/AppServices/subscriptions/ef948929-b54b-480a-a420-90e457d847e4/resourceGroups/Majorproject/providers/Microsoft.Web/sites/moneyviz",
+    "appService.deploySubpath": "."
+}
