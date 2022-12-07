@@ -199,7 +199,7 @@ class CategorizeData:
         df_group['width'] = df_group.apply(lambda x: x['rects']['dx'], axis=1)
         df_group['height'] = df_group.apply(lambda x: x['rects']['dy'], axis=1)
         #print(x,y,width,height)
-        df_group['rects_children'] = df_group.apply(lambda x: self.groupDatabyDate(df=df_filter,expense=type,type = x['label'], x = x['x'], y=x['y'], width=x['width'], height=x['height'],child=True), axis=1)
+        df_group['rects_children'] = df_group.apply(lambda x: self.groupDatabyDate(df=df_filter,expense=x['type'],type = x['label'], x = x['x'], y=x['y'], width=x['width'], height=x['height'],child=True), axis=1)
         #df_group['rects_children'] = df_group.apply(lambda x: self.groupDatabyDate(df=df_group,expense=expense,type = x['label'],x = x['x'], y=x['y'], width=x['width'], height=x['height'],child=True), axis=1)
         df_group['recent_transaction'] = df_group.apply(lambda x: df_filter[df_filter['transaction_description'] == x['label']].tail(5), axis=1)
         df_group.drop(['x', 'y', 'width', 'height'], axis=1, inplace=True)
@@ -211,15 +211,13 @@ class CategorizeData:
         if df is None:
              df =  self.df
         #filter df with transaction_type type = 'DEB'
-       #print column names
-        print(df.columns)
+        #print column names
         if expense:
             df_filter = df[df['type'] == expense]
         else:
             df_filter = df
         if type:
             df_filter = df_filter[df_filter['transaction_description'] == type]
-        print(df_filter.columns)
         df_group = df_filter.groupby(['transaction_date'],as_index=False).agg({'credit_amount': 'sum', 'debit_amount': 'sum'}) 
         #df_group['type'] = df_group.apply(lambda x: 'credit' if x['credit_amount'] > 0 else 'debit', axis=1)
         #add column label to df_group
@@ -235,7 +233,7 @@ class CategorizeData:
         df_group['width'] = df_group.apply(lambda x: x['rects']['dx'], axis=1)
         df_group['height'] = df_group.apply(lambda x: x['rects']['dy'], axis=1)
         df_group['category'] = df_group.apply(lambda x: "day", axis=1)
-        df_group['rects_children'] = df_group.apply(lambda x: self.groupDatabyDay(df_group,type = x['label'], x = x['x'], y=x['y'], width=x['width'], height=x['height'],child=True), axis=1)
+        df_group['rects_children'] = df_group.apply(lambda x: self.groupDatabyDay(df=df_filter,expense=type,type = x['label'], x = x['x'], y=x['y'], width=x['width'], height=x['height'],child=True), axis=1)
         df_group['recent_transaction'] = df_group.apply(lambda x: df_filter[df_filter['transaction_date'] == x['label']].tail(5), axis=1)
         df_group.drop(['x', 'y', 'width', 'height'], axis=1, inplace=True)
         
@@ -255,7 +253,7 @@ class CategorizeData:
         #add column total to df_group
         df_group['total'] = df_group.apply(lambda x: x['credit_amount'] + x['debit_amount'], axis=1)
         df_group['percentage'] = df_group.apply(lambda x: (x['total']/df_group['total'].sum())*100, axis=1)
-        df_group['rects'] = self.squarifyData(df_group)
+        df_group['rects'] = self.squarifyData(df_group,x=x,y=y,width=width,height=height,child = child)
         return df_group
     def hslColor(self,percentage ,h,l,s):
        #return hsl color
