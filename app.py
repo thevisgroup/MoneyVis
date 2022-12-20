@@ -12,6 +12,7 @@ api = Api(app)
 #define variable 
 @app.route('/upload/csv', methods=['POST'])
 def upload_csv():
+    print('I was called')
     if request.method == 'POST':
         #get file from request
         f = request.files['file']
@@ -50,7 +51,7 @@ def get_summary():
         #send as api response in json format
         return datasummary
 #Custom date range
-@app.route('/getsummary/dates', methods=['POST'])
+@app.route('/getsummary/date', methods=['POST'])
 def get_transactions_by_date():
     if request.method == 'POST':
         #file_path = os.path.join(os.getcwd(), 'data', 'data3.csv')
@@ -120,6 +121,19 @@ def get_category_summary_date():
         else :
             abort(404)
         return data_child.to_json(orient='records')
+@app.route('/getsummary/category/transaction', methods=['GET'])
+def get_category_transaction():
+    if request.method == 'GET':
+        file_path = os.path.join(os.getcwd(), 'data','data.csv')
+        data_type = request.args.get('parent_type')
+        child_type = request.args.get('child_type')
 
+        if data_type == 'category':
+            data_child = CategorizeData(file_path).groupDatabyCategorySpend()
+        elif data_type == 'sub_category':
+            data_child = CategorizeData(file_path).groupDatabySubCategory()
+        else :
+            abort(404)
+        return data_child.to_json(orient='records')
 if __name__ == '__main__':
     app.run(debug=True)

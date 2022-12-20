@@ -33,14 +33,17 @@ class CategorizeData:
         df['transaction_date'] = pd.to_datetime(df['transaction_date'], format='%d/%m/%Y')
         df['day_of_week'] = df['transaction_date'].dt.day_name()
         df['category_spend'] = np.where(df['transaction_type'].isin(['BP','DD','SO','PAY',]), 'bill_payments',
-        np.where(df['transaction_type'].isin(['CPT']), 'cash_withdrawal'
+        np.where(df['transaction_type'].isin(['CPT']), 'cash_point'
         ,np.where(df['transaction_type'].isin(['FEE']), 'account_fees',np.where(df['transaction_type'].isin(['TFR','FPO']),'transfer',np.where(df['transaction_type'].isin(['CHQ']), 'cheque_payments', np.where(df['transaction_type'].isin(['DEP']), 'deposits', np.where(df['transaction_type'].isin(['FPI','BGC','BI']), 'income', np.where(df['transaction_type'].isin(['DEB']), 'Shopping', 'other'))))))))
         df['sub_category'] = np.where(df['transaction_type'].isin(['DEB']) & df['transaction_description'].str.lower().str.contains('tesco|lidl|asda|aldi|sains|shop|food|sports|poundland|retail|mark|store|mart|spar|co-op') & df['debit_amount'] != 0, 'instore_purchase_debit', 'others')
-        df['sub_category'] = np.where(df['transaction_type'].isin(['DEB']) & df['transaction_description'].str.lower().str.contains('amazon|online|audible|ink_uk|amzn|amznmktplace|online|www.|.co.uk|.com'),'online_shopping_debit', df['sub_category']);
+        df['sub_category'] = np.where(df['transaction_type'].isin(['DEB']) & ((df['transaction_description'].str.lower().str.contains('amazon|online|audible|ink_uk|amzn|amznmktplace|online|www.|.co.uk|.com') & (df['debit_amount'] != 0) & (df['credit_amount'] == 0))|
+        (df['transaction_description'].str.lower().str.startswith('ama')) & (df['debit_amount'] != 0) & (df['credit_amount'] == 0)),'online_shopping_debit', df['sub_category']);
         #sub category if starts with 'ama' or amz
-        df['sub_category'] = np.where(df['transaction_type'].isin(['DEB']) & df['transaction_description'].str.lower().str.startswith('ama'), 'online_shoping_debit', df['sub_category']);
-        df['sub_category'] = np.where(df['transaction_type'].isin(['DEB']) & df['transaction_description'].str.lower().str.startswith('amz'), 'online_shoping_debit', df['sub_category']);
-        df['sub_category'] = np.where(df['transaction_type'].isin(['CPT']) & df['debit_amount'] != 0 , 'cash_withdrawals_debit', df['sub_category'])
+        #df['sub_category'] = np.where(df['transaction_type'].isin(['DEB']) & (df['transaction_description'].str.lower().str.startswith('ama')) & (df['debit_amount'] != 0) & (df['credit_amount'] == 0), 'online_shoping_debit', df['sub_category']);
+        df['sub_category'] = np.where(df['transaction_type'].isin(['DEB']) & (df['transaction_description'].str.lower().str.startswith('ama')) & (df['debit_amount'] == 0) & (df['credit_amount'] != 0), 'online_shoping_refund', df['sub_category']);
+        #df['sub_category'] = np.where(df['transaction_type'].isin(['DEB']) & df['transaction_description'].str.lower().str.startswith('amz'), 'online_shoping_debit', df['sub_category']);
+        df['sub_category'] = np.where(df['sub_category'].isin(['cash_point']) & (df['debit_amount'] != 0) & (df['credit_amount'] == 0)  , 'cash_point_withdrawals', df['sub_category'])
+        df['sub_category'] = np.where(df['sub_category'].isin(['cash_point']) & (df['debit_amount'] == 0) & (df['credit_amount'] != 0)  , 'cash_point_deposits', df['sub_category'])
         df['sub_category'] = np.where(df['transaction_type'].isin(['DD']) & df['transaction_description'].str.lower().str.contains('gym|internet|phone|rent|utilities|counc|water'), 'bill_payments', df['sub_category'])
         df['sub_category'] = np.where(df['transaction_type'].isin(['DEB']) & df['transaction_description'].str.lower().str.contains('gym|internet|phone|rent|utilities|counc|water'), 'bill_payments', df['sub_category'])
         #sub category cash and based on transaction_description with save
@@ -49,14 +52,14 @@ class CategorizeData:
         #df['sub_category'] = np.where(df['transaction_type'].isin(['FPO']) & df['debit_amount'] != 0, 'money_transfer_debit', df['sub_category'])
         df['sub_category'] = np.where(df['transaction_type'].isin(['TFR']) & df['debit_amount'] != 0, 'money_transfer_debit', df['sub_category'])
         df['sub_category'] = np.where(df['transaction_type'].isin(['TFR']) & df['credit_amount'] != 0, 'money_transfer_credit', df['sub_category'])
-        df['sub_category'] = np.where(df['transaction_type'].isin(['DEP','PAY']) &  df['transaction_description'].str.lower().str.contains('club_lloyds')& df['debit_amount'] != 0 , 'bank_fee_credit', df['sub_category'])
-        df['sub_category'] = np.where(df['transaction_type'].isin(['DEP','PAY'])  & df['transaction_description'].str.lower().str.contains('club_lloyds') & df['credit_amount'] != 0, 'bank_fee_debit', df['sub_category'])
+        df['sub_category'] = np.where(df['transaction_type'].isin(['DEP','PAY']) &  df['transaction_description'].str.lower().str.contains('club_lloyds')& (df['debit_amount'] == 0) & (df['credit_amount'] != 0) , 'bank_fee_credit', df['sub_category'])
+        df['sub_category'] = np.where(df['transaction_type'].isin(['DEP','PAY'])  & df['transaction_description'].str.lower().str.contains('club_lloyds') & (df['debit_amount'] != 0) & (df['credit_amount'] == 0), 'bank_fee_debit', df['sub_category'])
         #sub category based on transaction_description with dd and only debit and transaction_description with club lloyds regex expression
         df['sub_category'] = np.where(df['transaction_type'].isin(['FEE','DEB']) & df['transaction_description'].str.lower().str.contains('fee') & df['debit_amount'] != 0, 'bank_fee_debit', df['sub_category'])
         df['sub_category'] = np.where(df['transaction_type'].isin(['DEB']) & df['transaction_description'].str.lower().str.contains('share|trading212uk')  & df['debit_amount'] != 0, 'investment', df['sub_category'])
         #sub category based on transaction_description with dd and only debit and transaction_description with names
         df['sub_category'] = np.where(df['transaction_type'].isin(['FPI']) & df['credit_amount'] != 0 & df['transaction_description'].str.lower().str.contains(''), 'money_transfer_credit', df['sub_category'])
-        df['sub_category'] = np.where(df['transaction_type'].isin(['BGC']) & df['credit_amount'] != 0 & df['transaction_description'].str.lower().str.contains('university|univ'), 'income', df['sub_category'])
+        df['sub_category'] = np.where(df['transaction_type'].isin(['BGC']) & df['credit_amount'] != 0 & df['transaction_description'].str.lower().str.contains('university|univ') & (df['debit_amount'] != 0) & (df['credit_amount'] == 0), 'income', df['sub_category'])
         df['sub_category'] = np.where(df['transaction_type'].isin(['BI']) & df['credit_amount'] != 0 & df['transaction_description'].str.lower().str.contains('interest'), 'interest', df['sub_category'])
         df['sub_category'] = np.where(df['transaction_type'].isin(['SO']) & df['credit_amount'] != 0, 'income', df['sub_category'])
         #not contains
@@ -65,7 +68,8 @@ class CategorizeData:
         df['sub_category'] = np.where(df['transaction_type'].isin(['SO']) & df['debit_amount'] != 0 & df['transaction_description'].str.lower().str.contains('save'), 'savings', df['sub_category'])
         df['sub_category'] = np.where(df['transaction_type'].isin(['DEB']) & df['transaction_description'].str.lower().str.contains('non-')
         & df['debit_amount'] != 0, 'bank_fee_debit', df['sub_category'])
-        df['sub_category'] = np.where(df['transaction_type'].isin(['DEB']) & df['transaction_description'].str.lower().str.contains('easyjet|moving|travel|hotel|airport|ticket|booking|holiday|rooms|airbnb|stay|taxi|trip|uber|tickets|rail|train'), 'travel', df['sub_category'])
+        df['sub_category'] = np.where(df['transaction_type'].isin(['DEB']) & df['transaction_description'].str.lower().str.contains('easyjet|moving|travel|hotel|airport|ticket|booking|holiday|rooms|airbnb|stay|taxi|trip|uber|tickets|rail|train') & (df['debit_amount'] != 0) & (df['credit_amount'] == 0), 'travel', df['sub_category'])
+        df['sub_category'] = np.where(df['transaction_type'].isin(['DEB']) & df['transaction_description'].str.lower().str.contains('easyjet|moving|travel|hotel|airport|ticket|booking|holiday|rooms|airbnb|stay|taxi|trip|uber|tickets|rail|train') & (df['debit_amount'] == 0) & (df['credit_amount'] != 0), 'travel_refund', df['sub_category'])
         df['sub_category'] = np.where(df['transaction_type'].isin(['DD']) & df['debit_amount'] != 0 , 'bill_payments', df['sub_category'])
         df['sub_category'] = np.where(df['transaction_type'].isin(['CHQ']) & df['credit_amount'] != 0 , 'deposits_credit', df['sub_category'])
         df['sub_category'] = np.where(df['transaction_type'].isin(['CHQ']) & df['debit_amount'] != 0 , 'deposits_debit', df['sub_category'])
@@ -93,6 +97,8 @@ class CategorizeData:
         df_group = df.groupby(['type']).agg({'credit_amount': 'sum', 'debit_amount': 'sum'})
         #add column label to df_group
         df_group['label'] = df_group.apply(lambda x: x.name, axis=1)
+        #add type column to df_group
+        df_group['type'] = df_group.apply(lambda x: x.name, axis=1)
         #add column total to df_group
         df_group['total'] = df_group.apply(lambda x: x['credit_amount'] + x['debit_amount'], axis=1)
         df_group['percentage'] = df_group.apply(lambda x: (x['total']/df_group['total'].sum())*100, axis=1)
@@ -116,6 +122,8 @@ class CategorizeData:
               df_filter = df[df['type'] == type]
         df_group = df_filter.groupby(['transaction_type']).agg({'credit_amount': 'sum', 'debit_amount': 'sum'})     
         #add column label to df_group
+        #add column type to df_group
+        df_group['type'] = df_group.apply(lambda x: type, axis=1)
         df_group['label'] = df_group.apply(lambda x: x.name, axis=1)
         #add column total to df_group
         df_group['total'] = df_group.apply(lambda x: x['credit_amount'] + x['debit_amount'], axis=1)
@@ -133,39 +141,42 @@ class CategorizeData:
         df_group.drop(['x', 'y', 'width', 'height'], axis=1, inplace=True)
         return df_group
  
-    def groupDatabyCategorySpend(self,type=None,expense=None,df=None,x=None,y=None,width=None,height=None):
+    def groupDatabyCategorySpend(self,expense=None,df=None,x=None,y=None,width=None,height=None):
         df = self.df
         #filter items with type == 'credit'
         if expense:
              df_filter = df[df['type'] == expense]
-        if type:
-              df_filter = df[df['type'] == type]
-        df_group = df_filter.groupby(['category_spend']).agg({'credit_amount': 'sum', 'debit_amount': 'sum'})     
+        else:
+             df_filter = df
+        #if type:
+        #      df_filter = df[df['type'] == type]
+        df_group = df_filter.groupby(['category_spend']).agg({'credit_amount': 'sum', 'debit_amount': 'sum'})        
         #add column label to df_group
         df_group['label'] = df_group.apply(lambda x: x.name, axis=1)
+        df_group['type'] = df_group.apply(lambda x: 'credit' if x.credit_amount > 0 else 'debit', axis=1)
         #add column total to df_group
         df_group['total'] = df_group.apply(lambda x: x['credit_amount'] + x['debit_amount'], axis=1)
         df_group['percentage'] = df_group.apply(lambda x: (x['total']/df_group['total'].sum())*100, axis=1)
         df_group['rects'] = self.squarifyData(df_group)
         df_group['category'] = df_group.apply(lambda x: "subcategory", axis=1)
-        df_group['recent_transaction'] = df_group.apply(lambda x: df_filter[df_group['type'] == x['label']].tail(5), axis=1)
+        #df_group['recent_transaction'] = df_group.apply(lambda x: df_filter[df_group['type'] == x['label']].tail(5), axis=1)
         return df_group
 
     def groupDatabySubCategory(self,height=None, width=None, x=None, y=None,type=None):
         df = self.df
         #filter items with type == 'credit'
-        if type:
-              df_filter = df[df['type'] == type]
-        else:
-              df_filter = df
-        df_group = df_filter.groupby(['sub_category']).agg({'credit_amount': 'sum', 'debit_amount': 'sum'})     
+        df_filter = df
+        df_group = df_filter.groupby(['sub_category']).agg({'credit_amount': 'sum', 'debit_amount': 'sum'})
+        #df_group['type'] = df_group.apply(lambda x: 'credit' if x.credit_amount > 0 else 'debit', axis=1)     
         #add column label to df_group
         df_group['label'] = df_group.apply(lambda x: x.name, axis=1)
+        df_group['label'] = df_group.apply(lambda x: x['label'].replace('_',' '), axis=1)
         #add column total to df_group
         df_group['total'] = df_group.apply(lambda x: x['credit_amount'] + x['debit_amount'], axis=1)
+        df_group['percentage'] = df_group.apply(lambda x: (x['total']/df_group['total'].sum())*100, axis=1)
         df_group['rects'] = self.squarifyData(df_group)
         df_group['category'] = df_group.apply(lambda x: "description", axis=1)
-        df_group['recent_transaction'] = df_group.apply(lambda x: df_filter[df_group['type'] == x['label']].tail(5), axis=1)
+        #df_group['recent_transaction'] = df_group.apply(lambda x: df_filter[df_group['type'] == x['label']].tail(5), axis=1)
         return df_group
 
     def groupDatabyDescription(self,type=None,expense=None,df=None,x=None,y=None,width=None,height=None,child=False):
@@ -180,12 +191,12 @@ class CategorizeData:
             df_filter = df_filter[df_filter['transaction_type'] == type]
         #keep transaction_date after grouping
         df_group = df_filter.groupby(['transaction_description'],as_index=False).agg({'credit_amount': 'sum', 'debit_amount': 'sum', 'transaction_date': 'first'})
-        #add transaction_date column to df_group
-
+        #add column type to df_group
+        df_group['type'] = df_group.apply(lambda x: 'credit' if x['credit_amount'] > 0 else 'debit', axis=1)
         #add column label to df_group
         df_group['label'] = df_group.apply(lambda x: x['transaction_description'], axis=1)
         #add credit or debit type
-        df_group['type'] = df_group.apply(lambda x: 'credit' if x['credit_amount'] > 0 else 'debit', axis=1)
+        #df_group['type'] = df_group.apply(lambda x: 'credit' if x['credit_amount'] > 0 else 'debit', axis=1)
         #add column total to df_group
         df_group['total'] = df_group.apply(lambda x: x['credit_amount'] + x['debit_amount'], axis=1)
         df_group['rects'] = self.squarifyData(df_group,x=x,y=y,width=width,height=height,child=child)
@@ -217,8 +228,9 @@ class CategorizeData:
             df_filter = df
         if type:
             df_filter = df_filter[df_filter['transaction_description'] == type]
+        df_recent = df_filter
         df_group = df_filter.groupby(['transaction_date'],as_index=False).agg({'credit_amount': 'sum', 'debit_amount': 'sum'}) 
-        #df_group['type'] = df_group.apply(lambda x: 'credit' if x['credit_amount'] > 0 else 'debit', axis=1)
+        df_group['type'] = df_group.apply(lambda x: 'credit' if x['credit_amount'] > 0 else 'debit', axis=1)
         #add column label to df_group
         df_group['label'] = df_group.apply(lambda x: x['transaction_date'], axis=1)
         #add column total to df_group
@@ -227,13 +239,14 @@ class CategorizeData:
         if child == True:
             return df_group
         df_group['percentage'] = df_group.apply(lambda x: (x['total']/df_group['total'].sum())*100, axis=1)
+        df_group['category'] = df_group.apply(lambda x: "day", axis=1)
         df_group['x'] = df_group.apply(lambda x: x['rects']['x'], axis=1)
         df_group['y'] = df_group.apply(lambda x: x['rects']['y'], axis=1)
         df_group['width'] = df_group.apply(lambda x: x['rects']['dx'], axis=1)
         df_group['height'] = df_group.apply(lambda x: x['rects']['dy'], axis=1)
-        df_group['category'] = df_group.apply(lambda x: "day", axis=1)
+        
         df_group['rects_children'] = df_group.apply(lambda x: self.groupDatabyDay(df=df_filter,expense=type,type = x['label'], x = x['x'], y=x['y'], width=x['width'], height=x['height'],child=True), axis=1)
-        df_group['recent_transaction'] = df_group.apply(lambda x: df_filter[df_filter['transaction_date'] == x['label']].tail(5), axis=1)
+        df_group['recent_transaction'] = df_group.apply(lambda x: df_recent[df_recent['transaction_date'] == x['label']].tail(5), axis=1)
         df_group.drop(['x', 'y', 'width', 'height'], axis=1, inplace=True)
         
         return df_group
@@ -249,15 +262,15 @@ class CategorizeData:
         df_group = df_filter     
         #add column label to df_group
         df_group['label'] = df_group.apply(lambda x: x['transaction_date'], axis=1)
+        #add column type to df_group
+        df_group['type'] = df_group.apply(lambda x: 'credit' if x['credit_amount'] > 0 else 'debit', axis=1)
         #add column total to df_group
         df_group['total'] = df_group.apply(lambda x: x['credit_amount'] + x['debit_amount'], axis=1)
+        df_group['category'] = df_group.apply(lambda x: "day_transactions", axis=1)
         df_group['percentage'] = df_group.apply(lambda x: (x['total']/df_group['total'].sum())*100, axis=1)
         df_group['rects'] = self.squarifyData(df_group,x=x,y=y,width=width,height=height,child = child)
         return df_group
     def hslColor(self,percentage ,h,l,s):
-       #return hsl color
-         #if more percentage more dark
-            #if less percentage more light
         if percentage > 50:
             l = l - (percentage/100)
             h = h + (percentage/100)
@@ -285,17 +298,19 @@ class CategorizeData:
             rects = squarify.squarify(values, x, y, width, height)
         else:
             rects = squarify.padded_squarify(values, x, y, width, height)
-        sumofTotal = sum(values)
+        #sumofTotal = sum(values)
         #add color to rects based on area
         #generate random number between 0 and 360
-        h = random.randint(200,360)
-        l = random.randint(20,80)
-        s = random.randint(20,80)
-        for i in range(len(rects)):
-            rects[i]['color'] = self.hslColor(values[i]/sumofTotal,h,l,s)
+        # h = random.randint(200,360)
+        # l = random.randint(20,80)
+        # s = random.randint(20,80)
+        # for i in range(len(rects)):
+        #     rects[i]['color'] = self.hslColor(values[i]/sumofTotal,h,l,s)
         #rects as child to df_group
         df_group['rects'] = rects
         #add rects to df_group
         df_group['rects'] = df_group.apply(lambda x: x['rects'], axis=1)
         return df_group['rects']
 
+    def getLinePoints(self,width=None,height=None,):
+        pass
